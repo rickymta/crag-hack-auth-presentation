@@ -24,6 +24,7 @@ import {
   LightMode,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { toggleSidebar, toggleTheme, selectThemeMode, selectAuthUser } from '../../store';
 import { logoutAsync } from '../../store/slices/authSlice';
@@ -34,6 +35,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const themeMode = useAppSelector(selectThemeMode);
   const currentUser = useAppSelector(selectAuthUser);
   
@@ -66,6 +68,16 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
 
   const handleLogout = () => {
     dispatch(logoutAsync());
+    handleProfileMenuClose();
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    handleProfileMenuClose();
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
     handleProfileMenuClose();
   };
 
@@ -168,13 +180,13 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
           </Typography>
         </Box>
         <Divider />
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={handleProfileClick}>
           <ListItemIcon>
             <AccountCircle fontSize="small" />
           </ListItemIcon>
           Profile
         </MenuItem>
-        <MenuItem onClick={handleProfileMenuClose}>
+        <MenuItem onClick={handleSettingsClick}>
           <ListItemIcon>
             <Settings fontSize="small" />
           </ListItemIcon>

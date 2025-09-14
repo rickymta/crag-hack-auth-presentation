@@ -143,12 +143,8 @@ export const updateRole = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log("updateRole called with id:", id, "data:", roleData);
-
       try {
         const response = await RoleService.updateRole(id, roleData);
-        console.log("updateRole response:", response);
-
         if (response.success) {
           return response.data;
         } else {
@@ -183,12 +179,8 @@ export const deleteRole = createAsyncThunk(
   "roles/deleteRole",
   async (roleId: string, { rejectWithValue }) => {
     try {
-      console.log("deleteRole called with id:", roleId);
-
       try {
         const response = await RoleService.deleteRole(roleId);
-        console.log("deleteRole response:", response);
-
         if (response.success) {
           return roleId;
         } else {
@@ -213,28 +205,37 @@ export const toggleRoleStatus = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      console.log(
-        "toggleRoleStatus called with id:",
-        id,
-        "isActive:",
-        isActive
-      );
-
       // Since there's no specific API endpoint, we'll use update
-      const updateData: RoleUpdateDto = { isActive };
-
-      try {
-        const response = await RoleService.updateRole(id, updateData);
-        console.log("toggleRoleStatus response:", response);
-
-        if (response.success) {
-          return { id, isActive };
-        } else {
-          throw new Error(response.message);
+      if (!isActive) {
+        try {
+          const response = await RoleService.activateRole(id);
+          if (response.success) {
+            return { id, isActive: true };
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (apiError: any) {
+          console.warn(
+            "API activate failed, simulating activation:",
+            apiError.message
+          );
+          return { id, isActive: true }; // Simulate activation
         }
-      } catch (apiError: any) {
-        console.warn("API failed, simulating status toggle:", apiError.message);
-        return { id, isActive }; // Simulate successful toggle
+      } else {
+        try {
+          const response = await RoleService.deactivateRole(id); 
+          if (response.success) {
+            return { id, isActive: false };
+          } else {
+            throw new Error(response.message);
+          }
+        } catch (apiError: any) {
+          console.warn(
+            "API deactivate failed, simulating deactivation:",
+            apiError.message
+          );
+          return { id, isActive: false }; // Simulate deactivation
+        }
       }
     } catch (error: any) {
       console.error("toggleRoleStatus complete failure:", error);

@@ -13,6 +13,9 @@ import { DashboardPage } from '../pages/dashboard/DashboardPage';
 // User Pages
 const UsersPage = React.lazy(() => import('../pages/users/UsersPage'));
 
+// Profile Pages
+const UserProfilePage = React.lazy(() => import('../components/profile/UserProfilePage'));
+
 // Lazy load other pages for better performance
 const RolesPage = React.lazy(() => import('../pages/roles/RolesPage'));
 
@@ -74,6 +77,18 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <DashboardLayout>
           <UsersPage />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/profile',
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <UserProfilePage />
+          </React.Suspense>
         </DashboardLayout>
       </ProtectedRoute>
     ),

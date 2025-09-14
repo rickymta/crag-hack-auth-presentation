@@ -8,6 +8,7 @@ import userReducer from './slices/userSlice';
 import themeReducer from './slices/themeSlice';
 import roleReducer from './slices/roleSlice';
 import permissionReducer from './slices/permissionSlice';
+import userProfileReducer from './slices/userProfileSlice';
 
 // Export specific actions to avoid naming conflicts
 export { 
@@ -51,6 +52,16 @@ export {
   clearError as clearPermissionError
 } from './slices/permissionSlice';
 
+export {
+  fetchUserProfile,
+  updateUserProfile,
+  uploadAvatar,
+  deleteAvatar,
+  changePassword,
+  clearError as clearUserProfileError,
+  clearProfile
+} from './slices/userProfileSlice';
+
 // Configure store
 const store = configureStore({
   reducer: {
@@ -59,6 +70,7 @@ const store = configureStore({
     theme: themeReducer,
     roles: roleReducer,
     permissions: permissionReducer,
+    userProfile: userProfileReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
