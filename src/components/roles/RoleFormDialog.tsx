@@ -13,15 +13,18 @@ import {
   Alert,
   Chip,
   Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  OutlinedInput,
+  Checkbox,
+  Autocomplete,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
-import { useAppDispatch, useAppSelector, createRole, updateRole } from '../../store';
+import { 
+  useAppDispatch, 
+  useAppSelector, 
+  createRole, 
+  updateRole, 
+  fetchAllPermissions 
+} from '../../store';
 import type { RoleDto, RoleCreateDto, RoleUpdateDto } from '../../types/dto/role';
+import type { PermissionDto } from '../../types/dto/permission';
 
 interface RoleFormDialogProps {
   open: boolean;
@@ -29,24 +32,6 @@ interface RoleFormDialogProps {
   role?: RoleDto | null;
   mode: 'create' | 'edit';
 }
-
-// Mock permissions data matching API response format
-const MOCK_PERMISSIONS = [
-  { id: 'permissions.assign', name: 'permissions.assign', description: 'Assign permissions to roles' },
-  { id: 'permissions.create', name: 'permissions.create', description: 'Create new permissions' },
-  { id: 'permissions.delete', name: 'permissions.delete', description: 'Delete permissions' },
-  { id: 'permissions.manage', name: 'permissions.manage', description: 'Manage permissions' },
-  { id: 'permissions.read', name: 'permissions.read', description: 'View permissions' },
-  { id: 'permissions.update', name: 'permissions.update', description: 'Update permissions' },
-  { id: 'profile.read', name: 'profile.read', description: 'View user profiles' },
-  { id: 'profile.write', name: 'profile.write', description: 'Edit user profiles' },
-  { id: 'roles.delete', name: 'roles.delete', description: 'Delete roles' },
-  { id: 'roles.read', name: 'roles.read', description: 'View roles' },
-  { id: 'roles.write', name: 'roles.write', description: 'Create and update roles' },
-  { id: 'users.delete', name: 'users.delete', description: 'Delete users' },
-  { id: 'users.read', name: 'users.read', description: 'View users' },
-  { id: 'users.write', name: 'users.write', description: 'Create and update users' },
-];
 
 const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
   open,
@@ -56,6 +41,7 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.roles);
+  const { permissions, loading: permissionsLoading } = useAppSelector((state) => state.permissions);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -72,12 +58,31 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
   // Reset form when dialog opens/closes or role changes
   useEffect(() => {
     if (open) {
+      // Fetch permissions when dialog opens
+      if (permissions.length === 0 && !permissionsLoading) {
+        dispatch(fetchAllPermissions());
+      }
+
       if (mode === 'edit' && role) {
+        // When editing, role.permissions might contain permission names, we need to map to IDs
+        let permissionIds: string[] = [];
+        if (role.permissions && role.permissions.length > 0) {
+          permissionIds = role.permissions.map(permissionName => {
+            // Try to find permission by name first
+            const foundPermission = permissions.find((p: PermissionDto) => p.name === permissionName);
+            if (foundPermission) {
+              return foundPermission.id;
+            }
+            // If not found by name, assume it's already an ID
+            return permissionName;
+          });
+        }
+
         setFormData({
           name: role.name || '',
           description: role.description || '',
           isActive: role.isActive ?? true,
-          permissionIds: role.permissions || [],
+          permissionIds: permissionIds,
         });
       } else {
         setFormData({
@@ -89,7 +94,7 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
       }
       setValidationErrors({});
     }
-  }, [open, role, mode]);
+  }, [open, role, mode, permissions.length, permissionsLoading, dispatch]);
 
   const validateForm = useCallback(() => {
     const errors: typeof validationErrors = {};
@@ -126,16 +131,13 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
     }
   }, [validationErrors]);
 
-  const handlePermissionChange = useCallback((event: SelectChangeEvent<string[]>) => {
-    const value = event.target.value;
-    const permissionIds = typeof value === 'string' ? value.split(',') : value;
-    
+  const handleRemovePermission = useCallback((permissionIdToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      permissionIds,
+      permissionIds: prev.permissionIds.filter(id => id !== permissionIdToRemove),
     }));
 
-    // Clear validation error
+    // Clear validation error if exists
     if (validationErrors.permissionIds) {
       setValidationErrors(prev => ({
         ...prev,
@@ -184,11 +186,6 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
     }
   }, [loading, onClose]);
 
-  const getPermissionName = (permissionId: string): string => {
-    const permission = MOCK_PERMISSIONS.find(p => p.id === permissionId);
-    return permission ? permission.name : permissionId;
-  };
-
   return (
     <Dialog
       open={open}
@@ -232,105 +229,78 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
             disabled={loading}
           />
 
-          <FormControl fullWidth error={!!validationErrors.permissionIds}>
-            <InputLabel id="permissions-label">Permissions *</InputLabel>
-            <Select
-              labelId="permissions-label"
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Permissions *
+            </Typography>
+            <Autocomplete
               multiple
-              value={formData.permissionIds}
-              onChange={handlePermissionChange}
-              input={<OutlinedInput label="Permissions *" />}
-              disabled={loading}
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 350, // Tăng chiều cao để hiển thị nhiều items hơn
-                    width: 480, // Chiều rộng menu để đủ chỗ cho text
-                    overflow: 'auto',
-                  },
-                  sx: {
-                    // Custom scrollbar styling
-                    '& .MuiList-root': {
-                      paddingTop: 0,
-                      paddingBottom: 0,
-                    },
-                    // Custom scrollbar cho webkit browsers
-                    '&::-webkit-scrollbar': {
-                      width: '8px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                      backgroundColor: 'rgba(0,0,0,0.1)',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      borderRadius: '4px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                      },
-                    },
-                  },
-                },
-                anchorOrigin: {
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                },
-                transformOrigin: {
-                  vertical: 'top',
-                  horizontal: 'left',
-                },
-                // Cải thiện performance cho danh sách dài
-                variant: 'menu',
-                autoFocus: false, // Không tự động focus để tránh scroll nhảy
+              disableCloseOnSelect
+              options={permissions}
+              getOptionLabel={(option) => option.name}
+              value={formData.permissionIds.map(id => 
+                permissions.find(p => p.id === id) || { id, name: id, resource: '', action: '' }
+              ).filter(p => p.name)}
+              onChange={(_, newValue) => {
+                const permissionIds = newValue.map(permission => permission.id);
+                setFormData(prev => ({
+                  ...prev,
+                  permissionIds,
+                }));
+                
+                // Clear validation error
+                if (validationErrors.permissionIds) {
+                  setValidationErrors(prev => ({
+                    ...prev,
+                    permissionIds: undefined,
+                  }));
+                }
               }}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as string[]).map((value) => (
-                    <Chip
-                      key={value}
-                      label={getPermissionName(value)}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Search and select permissions..."
+                  error={!!validationErrors.permissionIds}
+                  helperText={validationErrors.permissionIds}
+                />
               )}
-            >
-              {MOCK_PERMISSIONS.map((permission) => (
-                <MenuItem 
-                  key={permission.id} 
-                  value={permission.id}
-                  sx={{
-                    minHeight: 64, // Tăng chiều cao cho mỗi item
-                    py: 1.5, // Padding top/bottom
-                    px: 2, // Padding left/right
-                  }}
-                >
-                  <Box sx={{ width: '100%' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                      {permission.name}
+              renderOption={(props, option, { selected }) => (
+                <li {...props}>
+                  <Checkbox
+                    checked={selected}
+                    sx={{ mr: 1 }}
+                  />
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {option.name}
                     </Typography>
-                    <Typography 
-                      variant="caption" 
-                      color="text.secondary"
-                      sx={{ 
-                        display: 'block',
-                        lineHeight: 1.2,
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      {permission.description}
+                    <Typography variant="caption" color="text.secondary">
+                      {(option as PermissionDto).description || `${option.resource}.${option.action}`}
                     </Typography>
                   </Box>
-                </MenuItem>
-              ))}
-            </Select>
-            {validationErrors.permissionIds && (
-              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
-                {validationErrors.permissionIds}
-              </Typography>
-            )}
-          </FormControl>
+                </li>
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    label={option.name}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    onDelete={() => handleRemovePermission(option.id)}
+                    deleteIcon={<Box sx={{ fontSize: '16px' }}>×</Box>}
+                  />
+                ))
+              }
+              disabled={loading || permissionsLoading}
+              loading={permissionsLoading}
+              loadingText="Loading permissions..."
+              noOptionsText="No permissions found"
+              sx={{ width: '100%' }}
+            />
+          </Box>
 
           <FormControlLabel
             control={
@@ -350,13 +320,15 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {formData.permissionIds.map((permissionId) => {
-                  const permission = MOCK_PERMISSIONS.find(p => p.id === permissionId);
+                  const permission = permissions.find((p: PermissionDto) => p.id === permissionId);
                   return (
                     <Chip
                       key={permissionId}
                       label={permission?.name || permissionId}
                       size="small"
                       color="primary"
+                      onDelete={() => handleRemovePermission(permissionId)}
+                      deleteIcon={<Box sx={{ fontSize: '16px' }}>×</Box>}
                     />
                   );
                 })}

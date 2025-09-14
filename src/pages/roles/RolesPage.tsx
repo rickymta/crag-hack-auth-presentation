@@ -117,6 +117,13 @@ const RolesPage: React.FC = () => {
     });
   };
 
+  const formatPermissionCount = (permissions: string[] | undefined) => {
+    const count = permissions?.length || 0;
+    if (count === 0) return 'No permissions';
+    if (count === 1) return '1 permission';
+    return `${count} permissions`;
+  };
+
   const columns: GridColDef[] = [
     {
       field: 'name',
@@ -151,22 +158,22 @@ const RolesPage: React.FC = () => {
     {
       field: 'permissions',
       headerName: 'Permissions',
-      width: 200,
+      width: 150,
       align: 'center',
       headerAlign: 'center',
-      renderCell: (params) => (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center' }}>
-          {params.value?.length > 0 && (
-            <Chip
-              label={`+${params.value.length - 2}`}
-              size="small"
-              variant="outlined"
-              color="secondary"
-              onClick={() => handleEditRole(params.row as RoleDto)}
-            />
-          )}
-        </Box>
-      ),
+      renderCell: (params) => {
+        const permissionCount = params.value?.length || 0;
+        return (
+          <Chip
+            label={formatPermissionCount(params.value)}
+            size="small"
+            variant="outlined"
+            color={permissionCount > 0 ? 'primary' : 'default'}
+            sx={{ cursor: 'pointer' }}
+            onClick={() => handleEditRole(params.row as RoleDto)}
+          />
+        );
+      },
     },
     {
       field: 'isActive',

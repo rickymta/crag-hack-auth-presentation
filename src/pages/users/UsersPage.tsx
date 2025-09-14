@@ -19,14 +19,14 @@ import {
   Alert,
   Avatar,
   Stack,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import {
   Add as AddIcon,
   Edit as EditIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Refresh as RefreshIcon,
@@ -120,18 +120,19 @@ const UsersPage: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleActiveUser = async (user: UserListItemDto) => {
-    // Toggle active status
-    if (user.isActive) {
+  const handleToggleActive = async (id: string, isActive: boolean) => {
+    try {
+      if (isActive) {
       // Deactivate user
-      await dispatch(deactivateUser(user.id));
+      await dispatch(deactivateUser(id));
     } else {
       // Activate user
-      await dispatch(activateUser(user.id));
+      await dispatch(activateUser(id));
     }
-
-    setSelectedUserId(null);
-    loadUsers();
+      console.log(`Role status toggled successfully`);
+    } catch (error) {
+      console.error('Failed to toggle role status:', error);
+    }
   };
 
   const handleDeleteUser = (id: string) => {
@@ -283,10 +284,16 @@ const UsersPage: React.FC = () => {
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
-        <Chip
-          label={params.value ? "Active" : "Inactive"}
-          color={params.value ? "success" : "error"}
-          size="small"
+        <FormControlLabel
+          control={
+            <Switch
+              checked={params.value}
+              onChange={(e) => handleToggleActive(params.row.id, e.target.checked)}
+              size="small"
+            />
+          }
+          label={params.value ? 'Active' : 'Inactive'}
+          labelPlacement="end"
         />
       ),
     },
@@ -318,17 +325,6 @@ const UsersPage: React.FC = () => {
           icon={<EditIcon />}
           label="Edit"
           onClick={() => handleEditUser(params.row)}
-        />,
-        <GridActionsCellItem
-          icon={
-            params.row.isActive ? (
-              <CloseIcon />
-            ) : (
-              <CheckIcon />
-            )
-          }
-          label={params.row.isActive ? "Deactivate" : "Activate"}
-          onClick={() => handleActiveUser(params.row)}
         />,
         <GridActionsCellItem
           icon={<DeleteIcon color="error" />}

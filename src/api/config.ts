@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
     CREATE: '/role',
     UPDATE: (id: string) => `/role/${id}`,
     DELETE: (id: string) => `/role/${id}`,
+    ACTIVATE: (id: string) => `/role/${id}/activate`,
+    DEACTIVATE: (id: string) => `/role/${id}/deactivate`,
   },
   
   // Permission Management

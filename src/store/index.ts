@@ -7,6 +7,7 @@ import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import themeReducer from './slices/themeSlice';
 import roleReducer from './slices/roleSlice';
+import permissionReducer from './slices/permissionSlice';
 
 // Export specific actions to avoid naming conflicts
 export { 
@@ -45,6 +46,11 @@ export {
   clearError as clearRoleError
 } from './slices/roleSlice';
 
+export {
+  fetchAllPermissions,
+  clearError as clearPermissionError
+} from './slices/permissionSlice';
+
 // Configure store
 const store = configureStore({
   reducer: {
@@ -52,6 +58,7 @@ const store = configureStore({
     users: userReducer,
     theme: themeReducer,
     roles: roleReducer,
+    permissions: permissionReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -90,3 +97,8 @@ export const selectSidebarOpen = (state: RootState) => state.theme.sidebarOpen;
 export const selectRolesList = (state: RootState) => state.roles.roles;
 export const selectRolesLoading = (state: RootState) => state.roles.loading;
 export const selectRolesError = (state: RootState) => state.roles.error;
+
+// Permission selectors
+export const selectPermissionsList = (state: RootState) => state.permissions.permissions;
+export const selectPermissionsLoading = (state: RootState) => state.permissions.loading;
+export const selectPermissionsError = (state: RootState) => state.permissions.error;

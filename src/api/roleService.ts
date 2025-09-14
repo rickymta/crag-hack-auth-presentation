@@ -46,6 +46,14 @@ export class RoleService {
     return apiClient.delete<void>(API_ENDPOINTS.ROLE.DELETE(id));
   }
 
+  static async activateRole(id: string): Promise<ApiResponse<RoleDto>> {
+    return apiClient.post<RoleDto>(API_ENDPOINTS.ROLE.ACTIVATE(id));
+  }
+
+  static async deactivateRole(id: string): Promise<ApiResponse<RoleDto>> {
+    return apiClient.post<RoleDto>(API_ENDPOINTS.ROLE.DEACTIVATE(id));
+  }
+
   /**
    * Get all roles (for dropdown/select components)
    */
