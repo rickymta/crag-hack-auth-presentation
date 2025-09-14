@@ -5,7 +5,6 @@ import {
   IconButton,
   Typography,
   Box,
-  Avatar,
   Menu,
   MenuItem,
   Divider,
@@ -28,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { toggleSidebar, toggleTheme, selectThemeMode, selectAuthUser } from '../../store';
 import { logoutAsync } from '../../store/slices/authSlice';
+import { SafeAvatar } from '../common/SafeAvatar';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -38,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
   const navigate = useNavigate();
   const themeMode = useAppSelector(selectThemeMode);
   const currentUser = useAppSelector(selectAuthUser);
+  const { profile } = useAppSelector((state) => state.userProfile);
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
@@ -146,13 +147,12 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
             onClick={handleProfileMenuOpen}
             color="inherit"
           >
-            {currentUser?.avatar ? (
-              <Avatar src={currentUser.avatar} sx={{ width: 32, height: 32 }} />
-            ) : (
-              <Avatar sx={{ width: 32, height: 32 }}>
-                {currentUser?.fullName?.split(' ').map((name: string) => name[0]).join('').substring(0, 2) || 'U'}
-              </Avatar>
-            )}
+            <SafeAvatar
+              src={profile?.avatar || currentUser?.avatar}
+              sx={{ width: 32, height: 32 }}
+            >
+              {currentUser?.fullName?.split(' ').map((name: string) => name[0]).join('').substring(0, 2) || 'U'}
+            </SafeAvatar>
           </IconButton>
         </Box>
       </Toolbar>

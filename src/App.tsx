@@ -5,6 +5,7 @@ import store from './store';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { router } from './router';
 import { TokenRefreshProvider } from './components/auth/TokenRefreshProvider';
+import { ProfileProvider } from './components/profile/ProfileProvider';
 
 function App() {
   return (
@@ -12,7 +13,9 @@ function App() {
       <ThemeProvider>
         <CssBaseline />
         <TokenRefreshProvider>
-          <RouterProvider router={router} />
+          <ProfileProvider>
+            <RouterProvider router={router} />
+          </ProfileProvider>
         </TokenRefreshProvider>
       </ThemeProvider>
     </Provider>

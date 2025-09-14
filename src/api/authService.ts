@@ -124,6 +124,31 @@ export class AuthService {
   }
 
   /**
+   * Upload avatar
+   */
+  static async uploadAvatar(avatarFile: File): Promise<ApiResponse<{ avatarUrl: string }>> {
+    const formData = new FormData();
+    formData.append('avatarFile', avatarFile);
+    
+    return apiClient.post<{ avatarUrl: string }>(
+      API_ENDPOINTS.USER_PROFILE.UPLOAD_AVATAR,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+  }
+
+  /**
+   * Delete avatar
+   */
+  static async deleteAvatar(): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(API_ENDPOINTS.USER_PROFILE.DELETE_AVATAR);
+  }
+
+  /**
    * Check if user is authenticated
    */
   static isAuthenticated(): boolean {

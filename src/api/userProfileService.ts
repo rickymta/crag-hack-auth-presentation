@@ -26,10 +26,10 @@ export class UserProfileService {
   // Upload avatar
   static async uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append('avatarFile', file);
     
     const response = await apiClient.post<{ avatarUrl: string }>(
-      '/user/upload-avatar', 
+      '/user/avatar', 
       formData,
       {
         headers: {

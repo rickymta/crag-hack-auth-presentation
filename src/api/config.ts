@@ -23,6 +23,8 @@ export const API_ENDPOINTS = {
     GET: '/user/profile',
     UPDATE: '/user/profile',
     CHANGE_PASSWORD: '/user/change-password',
+    UPLOAD_AVATAR: '/user/avatar',
+    DELETE_AVATAR: '/user/avatar',
   },
   
   // User Management (Admin)
