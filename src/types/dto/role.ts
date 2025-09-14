@@ -26,10 +26,10 @@ export interface RoleCreateDto {
 }
 
 export interface RoleUpdateDto {
-  name: string;
+  name?: string;
   description?: string;
-  isActive: boolean;
-  permissionIds: string[];
+  isActive?: boolean;
+  permissionIds?: string[];
 }
 
 export interface RoleAssignmentDto {

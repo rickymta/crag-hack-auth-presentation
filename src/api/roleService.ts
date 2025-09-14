@@ -4,7 +4,7 @@ import type {
   RoleDto,
   RoleCreateDto,
   RoleUpdateDto,
-  // RoleListDto,
+  RoleListDto,
   // RoleFilterDto,
 } from '../types/dto/role';
 import type { ApiResponse } from '../types/dto/base';
@@ -13,9 +13,9 @@ export class RoleService {
   /**
    * Get paginated list of roles (Admin only)
    */
-  static async getRoles(): Promise<ApiResponse<RoleDto[]>> {
+  static async getRoles(): Promise<ApiResponse<RoleListDto>> {
     const url = `${API_ENDPOINTS.ROLE.LIST}`;
-    return apiClient.get<RoleDto[]>(url);
+    return apiClient.get<RoleListDto>(url);
   }
 
   /**

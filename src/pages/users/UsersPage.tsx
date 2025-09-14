@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -10,70 +10,128 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-} from '@mui/material';
-import {
-  DataGrid,
-  GridActionsCellItem,
-} from '@mui/x-data-grid';
-import type { GridColDef, GridRowParams } from '@mui/x-data-grid';
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
+  Alert,
+  Avatar,
+  Stack,
+} from "@mui/material";
+import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
+import type { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import {
   Add as AddIcon,
   Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  role?: string;
-  status?: string;
-}
-
-// Mock data for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    role: 'admin',
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    phone: '+1 234 567 8901',
-    role: 'user',
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Bob Johnson',
-    email: 'bob.johnson@example.com',
-    phone: '+1 234 567 8902',
-    role: 'user',
-    status: 'inactive',
-  },
-];
+  Refresh as RefreshIcon,
+} from "@mui/icons-material";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../../store";
+import { fetchUsers, deleteUser, clearError, fetchRoles } from "../../store";
+import UserFormDialog from "../../components/users/UserFormDialog";
+import type { UserListItemDto, UserFilterDto } from "../../types/dto/user";
+import { deactivateUser, activateUser } from "../../store/slices/userSlice";
 
 const UsersPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [users] = useState<User[]>(mockUsers);
-  const [searchTerm, setSearchTerm] = useState('');
+  const dispatch = useDispatch<AppDispatch>();
+  const { users, loading, error, pagination } = useSelector(
+    (state: RootState) => state.users
+  );
+  const { roles } = useSelector((state: RootState) => state.roles);
+
+  // Dialog states
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
+  const [selectedUser, setSelectedUser] = useState<UserListItemDto | null>(
+    null
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Pagination
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+
+  const loadUsers = useCallback(() => {
+    const filterParams: UserFilterDto = {
+      pageNumber: paginationModel.page + 1,
+      pageSize: paginationModel.pageSize,
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      searchTerm: searchTerm || undefined,
+      isActive: statusFilter === "all" ? undefined : statusFilter === "active",
+    };
+    dispatch(fetchUsers(filterParams));
+  }, [
+    dispatch,
+    paginationModel.page,
+    paginationModel.pageSize,
+    searchTerm,
+    statusFilter,
+  ]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  // Fetch roles only once
+  useEffect(() => {
+    dispatch(fetchRoles());
+  }, [dispatch]);
+
   const handleCreateUser = () => {
-    navigate('/users/create');
+    setSelectedUser(null);
+    setDialogMode("create");
+    setDialogOpen(true);
   };
 
-  const handleEditUser = (id: string) => {
-    navigate(`/users/${id}/edit`);
+  const handleEditUser = (user: UserListItemDto) => {
+    // Map role names to role IDs
+    const roleDataValues = Array.isArray(roles)
+      ? roles
+      : roles && (roles as any).roles
+      ? (roles as any).roles
+      : [];
+    const roleIds =
+      user.roles?.map((roleName) => {
+        const role = roleDataValues.find((r: any) => r.name === roleName);
+        return role?.id || roleName; // fallback to roleName if ID not found
+      }) || [];
+
+    // Create updated user object with roleIds
+    const userWithRoleIds = {
+      ...user,
+      roleIds: roleIds,
+    };
+    setSelectedUser(userWithRoleIds);
+    setDialogMode("edit");
+    setDialogOpen(true);
+  };
+
+  const handleActiveUser = async (user: UserListItemDto) => {
+    // Toggle active status
+    if (user.isActive) {
+      // Deactivate user
+      await dispatch(deactivateUser(user.id));
+    } else {
+      // Activate user
+      await dispatch(activateUser(user.id));
+    }
+
+    setSelectedUserId(null);
+    loadUsers();
   };
 
   const handleDeleteUser = (id: string) => {
@@ -81,128 +139,318 @@ const UsersPage: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    // In a real app, you would dispatch a delete action here
-    console.log('Deleting user:', selectedUserId);
-    setDeleteDialogOpen(false);
-    setSelectedUserId(null);
+  const confirmDelete = async () => {
+    if (selectedUserId) {
+      await dispatch(deleteUser(selectedUserId));
+      setDeleteDialogOpen(false);
+      setSelectedUserId(null);
+      loadUsers();
+    }
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedUser(null);
+  };
+
+  const formatDate = (date: string | undefined) => {
+    if (!date) return "-";
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const columns: GridColDef[] = [
     {
-      field: 'id',
-      headerName: 'ID',
-      width: 80,
+      field: "avatar",
+      headerName: "",
+      width: 60,
+      sortable: false,
+      filterable: false,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Avatar src={params.row.avatar} sx={{ width: 32, height: 32 }}>
+          {params.row.firstName?.[0]}
+          {params.row.lastName?.[0]}
+        </Avatar>
+      ),
     },
     {
-      field: 'name',
-      headerName: 'Name',
+      field: "name",
+      headerName: "Name",
       width: 200,
-      flex: 1,
+      align: "center",
+      headerAlign: "center",
+      valueGetter: (_value, row) => `${row.firstName} ${row.lastName}`,
     },
     {
-      field: 'email',
-      headerName: 'Email',
+      field: "email",
+      headerName: "Email",
       width: 250,
-      flex: 1,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Typography variant="body2">{params.value}</Typography>
+          {params.row.isEmailVerified ? (
+            <Chip label="V" color="success" size="small" />
+          ) : (
+            <Chip label="X" color="warning" size="small" />
+          )}
+        </Box>
+      ),
     },
     {
-      field: 'phone',
-      headerName: 'Phone',
+      field: "phoneNumber",
+      headerName: "Phone",
       width: 150,
-    },
-    {
-      field: 'role',
-      headerName: 'Role',
-      width: 120,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
-        <Chip
-          label={params.value || 'User'}
-          color={params.value === 'admin' ? 'primary' : 'default'}
-          size="small"
-        />
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Typography variant="body2">{params.value || "-"}</Typography>
+          {params.value &&
+            (params.row.isPhoneVerified ? (
+              <Chip label="V" color="success" size="small" />
+            ) : (
+              <Chip label="X" color="warning" size="small" />
+            ))}
+        </Box>
       ),
     },
     {
-      field: 'status',
-      headerName: 'Status',
+      field: "roles",
+      headerName: "Roles",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 0.5,
+            justifyContent: "center",
+          }}
+        >
+          {params.value?.map((roleName: string) => {
+            // Find role by name to get display name
+            let roleData: any = roles as any;
+            let roleDataValues = Array.isArray(roleData)
+              ? roleData
+              : roleData && roleData.data
+              ? roleData.data
+              : [];
+            const role = roleDataValues.find(
+              (r: { name: string }) => r.name === roleName
+            );
+            const displayName = role?.name || roleName;
+
+            return (
+              <Chip
+                key={roleName}
+                label={displayName}
+                size="small"
+                variant="outlined"
+              />
+            );
+          }) || "-"}
+        </Box>
+      ),
+    },
+    {
+      field: "isActive",
+      headerName: "Status",
       width: 100,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
-          label={params.value || 'Active'}
-          color={params.value === 'active' ? 'success' : 'default'}
+          label={params.value ? "Active" : "Inactive"}
+          color={params.value ? "success" : "error"}
           size="small"
         />
       ),
     },
     {
-      field: 'actions',
-      type: 'actions',
-      headerName: 'Actions',
+      field: "createdAt",
+      headerName: "Created",
       width: 120,
+      align: "center",
+      headerAlign: "center",
+      valueFormatter: (value) => formatDate(value),
+    },
+    {
+      field: "lastLoginAt",
+      headerName: "Last Login",
+      width: 120,
+      align: "center",
+      headerAlign: "center",
+      valueFormatter: (value) => formatDate(value),
+    },
+    {
+      field: "actions",
+      type: "actions",
+      headerName: "Actions",
+      width: 100,
+      align: "center",
+      headerAlign: "center",
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
-          key="edit"
           icon={<EditIcon />}
           label="Edit"
-          onClick={() => handleEditUser(params.id as string)}
+          onClick={() => handleEditUser(params.row)}
         />,
         <GridActionsCellItem
-          key="delete"
-          icon={<DeleteIcon />}
+          icon={
+            params.row.isActive ? (
+              <CloseIcon />
+            ) : (
+              <CheckIcon />
+            )
+          }
+          label={params.row.isActive ? "Deactivate" : "Activate"}
+          onClick={() => handleActiveUser(params.row)}
+        />,
+        <GridActionsCellItem
+          icon={<DeleteIcon color="error" />}
           label="Delete"
-          onClick={() => handleDeleteUser(params.id as string)}
+          onClick={() => handleDeleteUser(params.row.id)}
         />,
       ],
     },
   ];
 
-  const filteredUsers = users.filter((user: User) =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone?.includes(searchTerm)
-  );
-
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
           User Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateUser}
-        >
-          Create User
-        </Button>
-      </Box>
 
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <SearchIcon color="action" />
+        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
           <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search users by name, email, or phone..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flexGrow: 1 }}
           />
-        </Box>
-      </Paper>
 
-      <Paper sx={{ height: 600, width: '100%' }}>
+          <FormControl size="medium" sx={{ minWidth: 120 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              input={<OutlinedInput label="Status" />}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateUser}
+          >
+            Create User
+          </Button>
+
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={loadUsers}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+        </Stack>
+
+        {/* Error Display */}
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ mb: 2 }}
+            onClose={() => dispatch(clearError())}
+          >
+            {error}
+          </Alert>
+        )}
+      </Box>
+
+      {/* Data Grid */}
+      <Paper sx={{ height: 600, width: "100%" }}>
         <DataGrid
-          rows={filteredUsers}
+          rows={users}
           columns={columns}
+          loading={loading}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
           pageSizeOptions={[5, 10, 25, 50]}
-          initialState={{
-            pagination: {
-              paginationModel: { page: 0, pageSize: 10 },
+          rowCount={pagination.totalCount}
+          paginationMode="server"
+          sortingMode="server"
+          filterMode="server"
+          slots={{
+            toolbar: GridToolbar,
+          }}
+          slotProps={{
+            toolbar: {
+              showQuickFilter: true,
+              quickFilterProps: { debounceMs: 500 },
             },
           }}
-          checkboxSelection
+          sx={{
+            "& .MuiDataGrid-row:hover": {
+              backgroundColor: "action.hover",
+            },
+            "& .MuiDataGrid-cell": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            "& .MuiDataGrid-cell--textCenter": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            "& .MuiDataGrid-columnHeader": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              textAlign: "center",
+              width: "100%",
+            },
+          }}
           disableRowSelectionOnClick
         />
       </Paper>
@@ -211,25 +459,27 @@ const UsersPage: React.FC = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        aria-labelledby="delete-dialog-title"
       >
-        <DialogTitle id="delete-dialog-title">
-          Confirm Delete
-        </DialogTitle>
+        <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete this user? This action cannot be undone.
-          </Typography>
+          Are you sure you want to delete this user? This action cannot be
+          undone.
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={confirmDelete} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* User Form Dialog */}
+      <UserFormDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        user={selectedUser}
+        mode={dialogMode}
+      />
     </Box>
   );
 };

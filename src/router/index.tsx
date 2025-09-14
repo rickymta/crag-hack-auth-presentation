@@ -11,12 +11,10 @@ import { RegisterPage } from '../pages/auth/RegisterPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 
 // User Pages
-const UserListPage = React.lazy(() => import('../pages/users/UserListPage'));
+const UsersPage = React.lazy(() => import('../pages/users/UsersPage'));
 
 // Lazy load other pages for better performance
 const RolesPage = React.lazy(() => import('../pages/roles/RolesPage'));
-const RoleCreatePage = React.lazy(() => import('../pages/roles/RoleCreatePage'));
-const RoleEditPage = React.lazy(() => import('../pages/roles/RoleEditPage'));
 
 const PermissionsPage = React.lazy(() => import('../pages/permissions/PermissionsPage'));
 const PermissionCreatePage = React.lazy(() => import('../pages/permissions/PermissionCreatePage'));
@@ -75,7 +73,7 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <DashboardLayout>
-          <UserListPage />
+          <UsersPage />
         </DashboardLayout>
       </ProtectedRoute>
     ),
@@ -87,30 +85,6 @@ export const router = createBrowserRouter([
         <DashboardLayout>
           <React.Suspense fallback={<div>Loading...</div>}>
             <RolesPage />
-          </React.Suspense>
-        </DashboardLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/roles/create',
-    element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <RoleCreatePage />
-          </React.Suspense>
-        </DashboardLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/roles/:id/edit',
-    element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <React.Suspense fallback={<div>Loading...</div>}>
-            <RoleEditPage />
           </React.Suspense>
         </DashboardLayout>
       </ProtectedRoute>

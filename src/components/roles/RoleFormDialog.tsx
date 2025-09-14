@@ -1,31 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   Button,
-  FormControl,
-  FormLabel,
-  FormGroup,
+  TextField,
   FormControlLabel,
-  Checkbox,
+  Switch,
   Box,
-  Stack,
-  Avatar,
-  IconButton,
+  Typography,
   Alert,
-  CircularProgress,
+  Chip,
+  Stack,
+  FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Chip,
   OutlinedInput,
-  Typography,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
-import type { RoleDto, RoleCreateDto } from '../../types/dto/role';
+import type { SelectChangeEvent } from '@mui/material';
+import { useAppDispatch, useAppSelector, createRole, updateRole } from '../../store';
+import type { RoleDto, RoleCreateDto, RoleUpdateDto } from '../../types/dto/role';
 
 interface RoleFormDialogProps {
   open: boolean;
@@ -34,27 +30,22 @@ interface RoleFormDialogProps {
   mode: 'create' | 'edit';
 }
 
-interface FormData {
-  name: string;
-  description: string;
-  isActive: boolean;
-  permissionIds: string[];
-}
-
-// Mock permissions - in real app this should come from API
-const availablePermissions = [
-  { id: '1', name: 'user.read', description: 'Read users' },
-  { id: '2', name: 'user.create', description: 'Create users' },
-  { id: '3', name: 'user.update', description: 'Update users' },
-  { id: '4', name: 'user.delete', description: 'Delete users' },
-  { id: '5', name: 'role.read', description: 'Read roles' },
-  { id: '6', name: 'role.create', description: 'Create roles' },
-  { id: '7', name: 'role.update', description: 'Update roles' },
-  { id: '8', name: 'role.delete', description: 'Delete roles' },
-  { id: '9', name: 'permission.read', description: 'Read permissions' },
-  { id: '10', name: 'permission.create', description: 'Create permissions' },
-  { id: '11', name: 'permission.update', description: 'Update permissions' },
-  { id: '12', name: 'permission.delete', description: 'Delete permissions' },
+// Mock permissions data matching API response format
+const MOCK_PERMISSIONS = [
+  { id: 'permissions.assign', name: 'permissions.assign', description: 'Assign permissions to roles' },
+  { id: 'permissions.create', name: 'permissions.create', description: 'Create new permissions' },
+  { id: 'permissions.delete', name: 'permissions.delete', description: 'Delete permissions' },
+  { id: 'permissions.manage', name: 'permissions.manage', description: 'Manage permissions' },
+  { id: 'permissions.read', name: 'permissions.read', description: 'View permissions' },
+  { id: 'permissions.update', name: 'permissions.update', description: 'Update permissions' },
+  { id: 'profile.read', name: 'profile.read', description: 'View user profiles' },
+  { id: 'profile.write', name: 'profile.write', description: 'Edit user profiles' },
+  { id: 'roles.delete', name: 'roles.delete', description: 'Delete roles' },
+  { id: 'roles.read', name: 'roles.read', description: 'View roles' },
+  { id: 'roles.write', name: 'roles.write', description: 'Create and update roles' },
+  { id: 'users.delete', name: 'users.delete', description: 'Delete users' },
+  { id: 'users.read', name: 'users.read', description: 'View users' },
+  { id: 'users.write', name: 'users.write', description: 'Create and update users' },
 ];
 
 const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
@@ -63,232 +54,334 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
   role,
   mode,
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const dispatch = useAppDispatch();
+  const { loading, error } = useAppSelector((state) => state.roles);
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
     isActive: true,
-    permissionIds: [],
+    permissionIds: [] as string[],
   });
 
+  const [validationErrors, setValidationErrors] = useState<{
+    name?: string;
+    permissionIds?: string;
+  }>({});
+
+  // Reset form when dialog opens/closes or role changes
   useEffect(() => {
-    if (role && mode === 'edit') {
-      setFormData({
-        name: role.name,
-        description: role.description || '',
-        isActive: role.isActive,
-        permissionIds: role.permissions || [],
-      });
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        isActive: true,
-        permissionIds: [],
-      });
+    if (open) {
+      if (mode === 'edit' && role) {
+        setFormData({
+          name: role.name || '',
+          description: role.description || '',
+          isActive: role.isActive ?? true,
+          permissionIds: role.permissions || [],
+        });
+      } else {
+        setFormData({
+          name: '',
+          description: '',
+          isActive: true,
+          permissionIds: [],
+        });
+      }
+      setValidationErrors({});
     }
-    setError(null);
-    setSuccess(false);
-  }, [role, mode, open]);
+  }, [open, role, mode]);
 
-  const handleInputChange = (field: keyof Omit<FormData, 'permissionIds' | 'isActive'>) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-  };
+  const validateForm = useCallback(() => {
+    const errors: typeof validationErrors = {};
 
-  const handleCheckboxChange = (field: 'isActive') => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.checked,
-    }));
-  };
-
-  const handlePermissionChange = (permissionId: string) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      permissionIds: e.target.checked
-        ? [...prev.permissionIds, permissionId]
-        : prev.permissionIds.filter((id: string) => id !== permissionId),
-    }));
-  };
-
-  const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      setError('Role name is required');
-      return false;
+      errors.name = 'Role name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Role name must be at least 2 characters';
     }
 
-    if (formData.name.length < 2) {
-      setError('Role name must be at least 2 characters');
-      return false;
+    if (formData.permissionIds.length === 0) {
+      errors.permissionIds = 'At least one permission must be selected';
     }
 
-    return true;
-  };
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [formData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleInputChange = useCallback((field: string) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Clear validation error for this field
+    if (validationErrors[field as keyof typeof validationErrors]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
+  }, [validationErrors]);
+
+  const handlePermissionChange = useCallback((event: SelectChangeEvent<string[]>) => {
+    const value = event.target.value;
+    const permissionIds = typeof value === 'string' ? value.split(',') : value;
     
+    setFormData(prev => ({
+      ...prev,
+      permissionIds,
+    }));
+
+    // Clear validation error
+    if (validationErrors.permissionIds) {
+      setValidationErrors(prev => ({
+        ...prev,
+        permissionIds: undefined,
+      }));
+    }
+  }, [validationErrors.permissionIds]);
+
+  const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
     try {
-      const roleData: RoleCreateDto = {
-        name: formData.name,
-        description: formData.description || undefined,
-        isActive: formData.isActive,
-        permissionIds: formData.permissionIds,
-      };
+      if (mode === 'create') {
+        const createData: RoleCreateDto = {
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          isActive: formData.isActive,
+          permissionIds: formData.permissionIds,
+        };
 
-      // TODO: Implement actual API calls when role service is ready
-      console.log(mode === 'create' ? 'Creating role:' : 'Updating role:', roleData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 1000);
+        await dispatch(createRole(createData)).unwrap();
+      } else if (mode === 'edit' && role) {
+        const updateData: RoleUpdateDto = {
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          isActive: formData.isActive,
+          permissionIds: formData.permissionIds,
+        };
 
-    } catch (error: any) {
-      setError(error.message || 'An error occurred');
-    } finally {
-      setLoading(false);
+        await dispatch(updateRole({ id: role.id, roleData: updateData })).unwrap();
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Form submission error:', error);
+      // Error is handled by Redux state
     }
-  };
+  }, [dispatch, formData, mode, role, validateForm, onClose]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (!loading) {
       onClose();
     }
+  }, [loading, onClose]);
+
+  const getPermissionName = (permissionId: string): string => {
+    const permission = MOCK_PERMISSIONS.find(p => p.id === permissionId);
+    return permission ? permission.name : permissionId;
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: { minHeight: '400px' }
+      }}
+    >
       <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          {mode === 'create' ? 'Create New Role' : 'Edit Role'}
-          <IconButton onClick={handleClose} disabled={loading}>
-            <Close />
-          </IconButton>
-        </Box>
+        {mode === 'create' ? 'Create New Role' : 'Edit Role'}
       </DialogTitle>
 
-      <form onSubmit={handleSubmit}>
-        <DialogContent>
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
 
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {mode === 'create' ? 'Role created successfully!' : 'Role updated successfully!'}
-            </Alert>
-          )}
-
-          <Stack spacing={3}>
-            {/* Basic Info */}
-            <TextField
-              required
-              fullWidth
-              label="Role Name"
-              value={formData.name}
-              onChange={handleInputChange('name')}
-              disabled={loading}
-              placeholder="e.g., Admin, User, Manager"
-            />
-
-            <TextField
-              fullWidth
-              label="Description"
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={handleInputChange('description')}
-              disabled={loading}
-              placeholder="Describe the role and its responsibilities..."
-            />
-
-            {/* Active Status */}
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.isActive}
-                  onChange={handleCheckboxChange('isActive')}
-                  disabled={loading}
-                />
-              }
-              label="Active"
-            />
-
-            {/* Permissions */}
-            <FormControl component="fieldset">
-              <FormLabel component="legend">
-                <Typography variant="h6">Permissions</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Select the permissions for this role
-                </Typography>
-              </FormLabel>
-              <FormGroup sx={{ mt: 2 }}>
-                {availablePermissions.map((permission) => (
-                  <FormControlLabel
-                    key={permission.id}
-                    control={
-                      <Checkbox
-                        checked={formData.permissionIds.includes(permission.id)}
-                        onChange={handlePermissionChange(permission.id)}
-                        disabled={loading}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography variant="body2" fontWeight="medium">
-                          {permission.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {permission.description}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                ))}
-              </FormGroup>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
+          <TextField
+            label="Role Name"
+            value={formData.name}
+            onChange={handleInputChange('name')}
+            error={!!validationErrors.name}
+            helperText={validationErrors.name}
+            required
+            fullWidth
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
-          >
-            {loading ? 'Saving...' : (mode === 'create' ? 'Create Role' : 'Update Role')}
-          </Button>
-        </DialogActions>
-      </form>
+          />
+
+          <TextField
+            label="Description"
+            value={formData.description}
+            onChange={handleInputChange('description')}
+            multiline
+            rows={3}
+            fullWidth
+            disabled={loading}
+          />
+
+          <FormControl fullWidth error={!!validationErrors.permissionIds}>
+            <InputLabel id="permissions-label">Permissions *</InputLabel>
+            <Select
+              labelId="permissions-label"
+              multiple
+              value={formData.permissionIds}
+              onChange={handlePermissionChange}
+              input={<OutlinedInput label="Permissions *" />}
+              disabled={loading}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 350, // Tăng chiều cao để hiển thị nhiều items hơn
+                    width: 480, // Chiều rộng menu để đủ chỗ cho text
+                    overflow: 'auto',
+                  },
+                  sx: {
+                    // Custom scrollbar styling
+                    '& .MuiList-root': {
+                      paddingTop: 0,
+                      paddingBottom: 0,
+                    },
+                    // Custom scrollbar cho webkit browsers
+                    '&::-webkit-scrollbar': {
+                      width: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                      borderRadius: '4px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                      },
+                    },
+                  },
+                },
+                anchorOrigin: {
+                  vertical: 'bottom',
+                  horizontal: 'left',
+                },
+                transformOrigin: {
+                  vertical: 'top',
+                  horizontal: 'left',
+                },
+                // Cải thiện performance cho danh sách dài
+                variant: 'menu',
+                autoFocus: false, // Không tự động focus để tránh scroll nhảy
+              }}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {(selected as string[]).map((value) => (
+                    <Chip
+                      key={value}
+                      label={getPermissionName(value)}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              )}
+            >
+              {MOCK_PERMISSIONS.map((permission) => (
+                <MenuItem 
+                  key={permission.id} 
+                  value={permission.id}
+                  sx={{
+                    minHeight: 64, // Tăng chiều cao cho mỗi item
+                    py: 1.5, // Padding top/bottom
+                    px: 2, // Padding left/right
+                  }}
+                >
+                  <Box sx={{ width: '100%' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                      {permission.name}
+                    </Typography>
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{ 
+                        display: 'block',
+                        lineHeight: 1.2,
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {permission.description}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+            {validationErrors.permissionIds && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                {validationErrors.permissionIds}
+              </Typography>
+            )}
+          </FormControl>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={formData.isActive}
+                onChange={handleInputChange('isActive')}
+                disabled={loading}
+              />
+            }
+            label="Active Role"
+          />
+
+          {formData.permissionIds.length > 0 && (
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>
+                Selected Permissions:
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {formData.permissionIds.map((permissionId) => {
+                  const permission = MOCK_PERMISSIONS.find(p => p.id === permissionId);
+                  return (
+                    <Chip
+                      key={permissionId}
+                      label={permission?.name || permissionId}
+                      size="small"
+                      color="primary"
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+
+      <DialogActions sx={{ p: 2, gap: 1 }}>
+        <Button
+          onClick={handleClose}
+          disabled={loading}
+          variant="outlined"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={loading}
+          variant="contained"
+          color="primary"
+        >
+          {loading ? 'Saving...' : mode === 'create' ? 'Create Role' : 'Update Role'}
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 };
