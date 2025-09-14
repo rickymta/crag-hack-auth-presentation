@@ -33,7 +33,7 @@ import {
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store";
-import { fetchUsers, deleteUser, clearError, fetchRoles } from "../../store";
+import { fetchUsers, deleteUser, clearError, fetchAllRoles } from "../../store";
 import UserFormDialog from "../../components/users/UserFormDialog";
 import type { UserListItemDto, UserFilterDto } from "../../types/dto/user";
 import { deactivateUser, activateUser } from "../../store/slices/userSlice";
@@ -88,7 +88,7 @@ const UsersPage: React.FC = () => {
 
   // Fetch roles only once
   useEffect(() => {
-    dispatch(fetchRoles());
+    dispatch(fetchAllRoles());
   }, [dispatch]);
 
   const handleCreateUser = () => {

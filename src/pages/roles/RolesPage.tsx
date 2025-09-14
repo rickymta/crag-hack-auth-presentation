@@ -156,20 +156,13 @@ const RolesPage: React.FC = () => {
       headerAlign: 'center',
       renderCell: (params) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center' }}>
-          {params.value?.slice(0, 2).map((permission: string) => (
-            <Chip
-              key={permission}
-              label={permission}
-              size="small"
-              variant="outlined"
-            />
-          ))}
-          {params.value?.length > 2 && (
+          {params.value?.length > 0 && (
             <Chip
               label={`+${params.value.length - 2}`}
               size="small"
               variant="outlined"
               color="secondary"
+              onClick={() => handleEditRole(params.row as RoleDto)}
             />
           )}
         </Box>

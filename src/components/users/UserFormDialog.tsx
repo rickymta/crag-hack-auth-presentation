@@ -26,7 +26,7 @@ import {
 import { PhotoCamera, Close } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store";
-import { createUser, updateUser, fetchUsers, fetchRoles } from "../../store";
+import { createUser, updateUser, fetchUsers, fetchAllRoles } from "../../store";
 import type {
   UserCreateDto,
   UserAdminUpdateDto,
@@ -68,15 +68,14 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
 
   // Fetch roles on component mount
   useEffect(() => {
-    dispatch(fetchRoles());
+    dispatch(fetchAllRoles());
   }, [dispatch]);
 
   // Ensure roles is always an array
   let rolesArray: any[] = [];
   try
   {
-    let roleData: any = roles as any;
-    rolesArray = roleData.roles || [];
+    rolesArray = roles;
   } catch (error) {
     console.error("Error fetching roles:", error);
   }

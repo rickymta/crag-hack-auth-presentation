@@ -158,6 +158,7 @@ const RoleFormDialog: React.FC<RoleFormDialogProps> = ({
           permissionIds: formData.permissionIds,
         };
 
+        console.log('Dispatching createRole with data:', createData);
         await dispatch(createRole(createData)).unwrap();
       } else if (mode === 'edit' && role) {
         const updateData: RoleUpdateDto = {

@@ -40,6 +40,7 @@ export {
   createRole,
   updateRole,
   deleteRole,
+  fetchAllRoles,
   toggleRoleStatus,
   clearError as clearRoleError
 } from './slices/roleSlice';

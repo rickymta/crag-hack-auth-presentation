@@ -1,11 +1,11 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type {
   RoleDto,
   RoleCreateDto,
   RoleUpdateDto,
   RoleListDto,
-} from '../../types/dto/role';
-import { RoleService } from '../../api';
+} from "../../types/dto/role";
+import { RoleService } from "../../api";
 
 interface RoleState {
   roles: RoleDto[];
@@ -38,93 +38,82 @@ const initialState: RoleState = {
   // },
 };
 
+export const fetchAllRoles = createAsyncThunk(
+  "roles/fetchAllRoles",
+  async (_, { rejectWithValue }) => {
+    try {
+      // Try API first
+      try {
+        const response = await RoleService.getAllRoles();
+        const roleListData = response.data as RoleDto[];
+        return roleListData;
+      } catch (apiError: any) {
+        console.warn(
+          "API failed, falling back to mock roles data:",
+          apiError.message
+        );
+        // Fallback: return mock roles data
+        const mockRoles: RoleDto[] = [];
+        return mockRoles;
+      }
+    } catch (error: any) {
+      console.error("fetchAllRoles complete failure:", error);
+      return rejectWithValue(error.message || "Failed to fetch roles");
+    }
+  }
+);
+
 // Async thunk for fetching roles
 export const fetchRoles = createAsyncThunk(
-  'roles/fetchRoles',
+  "roles/fetchRoles",
   async (_, { rejectWithValue }) => {
     try {
       // Try API first
       try {
         const response = await RoleService.getRoles();
-        console.log('fetchRoles - API response:', response);
+        console.log("fetchRoles - API response:", response);
         if (response.success && response.data && response.data.roles) {
           // Extract roles array from the nested data structure
           const roleListData = response.data as RoleListDto;
           return roleListData.roles;
         } else {
-          throw new Error(response.message || 'No roles data received');
+          throw new Error(response.message || "No roles data received");
         }
       } catch (apiError: any) {
-        console.warn('API failed, falling back to mock roles data:', apiError.message);
+        console.warn(
+          "API failed, falling back to mock roles data:",
+          apiError.message
+        );
         // Fallback: return mock roles data
-        const mockRoles: RoleDto[] = [
-          {
-            id: '96c0426c-7e36-4689-bf65-2c51a9bf2314',
-            name: 'Admin',
-            description: 'Administrator role with full access',
-            isActive: true,
-            createdAt: '2025-09-09T14:54:58',
-            updatedAt: '2025-09-09T14:54:58',
-            permissions: [
-              'permissions.assign',
-              'permissions.create',
-              'permissions.delete',
-              'permissions.manage',
-              'permissions.read',
-              'permissions.update',
-              'profile.read',
-              'profile.write',
-              'roles.delete',
-              'roles.read',
-              'roles.write',
-              'users.delete',
-              'users.read',
-              'users.write'
-            ],
-            userCount: 2,
-          },
-          {
-            id: '5ee80dca-027d-448d-805c-cb9aa3ce7fc6',
-            name: 'User',
-            description: 'Standard user role',
-            isActive: true,
-            createdAt: '2025-09-09T14:54:58',
-            updatedAt: '2025-09-09T14:54:58',
-            permissions: [
-              'profile.read',
-              'profile.write'
-            ],
-            userCount: 1,
-          },
-        ];
+        const mockRoles: RoleDto[] = [];
         return mockRoles;
       }
     } catch (error: any) {
-      console.error('fetchRoles complete failure:', error);
-      return rejectWithValue(error.message || 'Failed to fetch roles');
+      console.error("fetchRoles complete failure:", error);
+      return rejectWithValue(error.message || "Failed to fetch roles");
     }
   }
 );
 
 // Create role
 export const createRole = createAsyncThunk(
-  'roles/createRole',
+  "roles/createRole",
   async (roleData: RoleCreateDto, { rejectWithValue }) => {
     try {
-      console.log('createRole called with data:', roleData);
-      
+      console.log("createRole called with data:", roleData);
+
       try {
         const response = await RoleService.createRole(roleData);
-        console.log('createRole response:', response);
-        
+        console.log("createRole response:", response);
+
         if (response.success) {
           return response.data;
         } else {
           throw new Error(response.message);
         }
       } catch (apiError: any) {
-        console.warn('API failed, simulating role creation:', apiError.message);
-        
+        console.warn("API failed, simulating role creation:", apiError.message);
+
         // Fallback: simulate creation
         const newRole: RoleDto = {
           id: Date.now().toString(),
@@ -136,115 +125,126 @@ export const createRole = createAsyncThunk(
           permissions: roleData.permissionIds || [],
           userCount: 0,
         };
-        
+
         return newRole;
       }
     } catch (error: any) {
-      console.error('createRole complete failure:', error);
-      return rejectWithValue(error.message || 'Failed to create role');
+      console.error("createRole complete failure:", error);
+      return rejectWithValue(error.message || "Failed to create role");
     }
   }
 );
 
 // Update role
 export const updateRole = createAsyncThunk(
-  'roles/updateRole',
-  async ({ id, roleData }: { id: string; roleData: RoleUpdateDto }, { rejectWithValue }) => {
+  "roles/updateRole",
+  async (
+    { id, roleData }: { id: string; roleData: RoleUpdateDto },
+    { rejectWithValue }
+  ) => {
     try {
-      console.log('updateRole called with id:', id, 'data:', roleData);
-      
+      console.log("updateRole called with id:", id, "data:", roleData);
+
       try {
         const response = await RoleService.updateRole(id, roleData);
-        console.log('updateRole response:', response);
-        
+        console.log("updateRole response:", response);
+
         if (response.success) {
           return response.data;
         } else {
           throw new Error(response.message);
         }
       } catch (apiError: any) {
-        console.warn('API failed, simulating role update:', apiError.message);
-        
+        console.warn("API failed, simulating role update:", apiError.message);
+
         // Fallback: simulate update
         const updatedRole: RoleDto = {
           id,
-          name: roleData.name || 'Updated Role',
-          description: roleData.description || 'Updated Description',
+          name: roleData.name || "Updated Role",
+          description: roleData.description || "Updated Description",
           isActive: roleData.isActive ?? true,
-          createdAt: '2024-01-01T00:00:00.000Z', // Keep original
+          createdAt: "2024-01-01T00:00:00.000Z", // Keep original
           updatedAt: new Date().toISOString(),
           permissions: roleData.permissionIds || [],
           userCount: 0, // Keep original
         };
-        
+
         return updatedRole;
       }
     } catch (error: any) {
-      console.error('updateRole complete failure:', error);
-      return rejectWithValue(error.message || 'Failed to update role');
+      console.error("updateRole complete failure:", error);
+      return rejectWithValue(error.message || "Failed to update role");
     }
   }
 );
 
 // Delete role
 export const deleteRole = createAsyncThunk(
-  'roles/deleteRole',
+  "roles/deleteRole",
   async (roleId: string, { rejectWithValue }) => {
     try {
-      console.log('deleteRole called with id:', roleId);
-      
+      console.log("deleteRole called with id:", roleId);
+
       try {
         const response = await RoleService.deleteRole(roleId);
-        console.log('deleteRole response:', response);
-        
+        console.log("deleteRole response:", response);
+
         if (response.success) {
           return roleId;
         } else {
           throw new Error(response.message);
         }
       } catch (apiError: any) {
-        console.warn('API failed, simulating role deletion:', apiError.message);
+        console.warn("API failed, simulating role deletion:", apiError.message);
         return roleId; // Simulate successful deletion
       }
     } catch (error: any) {
-      console.error('deleteRole complete failure:', error);
-      return rejectWithValue(error.message || 'Failed to delete role');
+      console.error("deleteRole complete failure:", error);
+      return rejectWithValue(error.message || "Failed to delete role");
     }
   }
 );
 
 // Toggle role active status
 export const toggleRoleStatus = createAsyncThunk(
-  'roles/toggleRoleStatus',
-  async ({ id, isActive }: { id: string; isActive: boolean }, { rejectWithValue }) => {
+  "roles/toggleRoleStatus",
+  async (
+    { id, isActive }: { id: string; isActive: boolean },
+    { rejectWithValue }
+  ) => {
     try {
-      console.log('toggleRoleStatus called with id:', id, 'isActive:', isActive);
-      
+      console.log(
+        "toggleRoleStatus called with id:",
+        id,
+        "isActive:",
+        isActive
+      );
+
       // Since there's no specific API endpoint, we'll use update
       const updateData: RoleUpdateDto = { isActive };
-      
+
       try {
         const response = await RoleService.updateRole(id, updateData);
-        console.log('toggleRoleStatus response:', response);
-        
+        console.log("toggleRoleStatus response:", response);
+
         if (response.success) {
           return { id, isActive };
         } else {
           throw new Error(response.message);
         }
       } catch (apiError: any) {
-        console.warn('API failed, simulating status toggle:', apiError.message);
+        console.warn("API failed, simulating status toggle:", apiError.message);
         return { id, isActive }; // Simulate successful toggle
       }
     } catch (error: any) {
-      console.error('toggleRoleStatus complete failure:', error);
-      return rejectWithValue(error.message || 'Failed to toggle role status');
+      console.error("toggleRoleStatus complete failure:", error);
+      return rejectWithValue(error.message || "Failed to toggle role status");
     }
   }
 );
 
 const roleSlice = createSlice({
-  name: 'roles',
+  name: "roles",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -273,7 +273,7 @@ const roleSlice = createSlice({
           state.roles = [];
         }
       })
-      
+
       // Create role
       .addCase(createRole.pending, (state) => {
         state.loading = true;
@@ -288,7 +288,7 @@ const roleSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Update role
       .addCase(updateRole.pending, (state) => {
         state.loading = true;
@@ -297,7 +297,9 @@ const roleSlice = createSlice({
       .addCase(updateRole.fulfilled, (state, action) => {
         state.loading = false;
         const updatedRole = action.payload;
-        const index = state.roles.findIndex(role => role.id === updatedRole.id);
+        const index = state.roles.findIndex(
+          (role) => role.id === updatedRole.id
+        );
         if (index !== -1) {
           state.roles[index] = updatedRole;
         }
@@ -307,7 +309,7 @@ const roleSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Delete role
       .addCase(deleteRole.pending, (state) => {
         state.loading = true;
@@ -316,14 +318,14 @@ const roleSlice = createSlice({
       .addCase(deleteRole.fulfilled, (state, action) => {
         state.loading = false;
         const deletedRoleId = action.payload;
-        state.roles = state.roles.filter(role => role.id !== deletedRoleId);
+        state.roles = state.roles.filter((role) => role.id !== deletedRoleId);
         state.error = null;
       })
       .addCase(deleteRole.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Toggle role status
       .addCase(toggleRoleStatus.pending, (state) => {
         state.loading = true;
@@ -332,13 +334,29 @@ const roleSlice = createSlice({
       .addCase(toggleRoleStatus.fulfilled, (state, action) => {
         state.loading = false;
         const { id, isActive } = action.payload;
-        const role = state.roles.find(role => role.id === id);
+        const role = state.roles.find((role) => role.id === id);
         if (role) {
           role.isActive = isActive;
         }
         state.error = null;
       })
       .addCase(toggleRoleStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch all roles (for dropdowns, etc.)
+    builder
+      .addCase(fetchAllRoles.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllRoles.fulfilled, (state, action) => {
+        state.loading = false;
+        state.roles = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAllRoles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
