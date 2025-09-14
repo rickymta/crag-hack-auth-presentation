@@ -48,7 +48,6 @@ const RolesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const loadRoles = useCallback(() => {
-    console.log('RolesPage - Loading roles...');
     dispatch(fetchRoles());
   }, [dispatch]);
 
@@ -84,7 +83,6 @@ const RolesPage: React.FC = () => {
     if (selectedRoleId) {
       try {
         await dispatch(deleteRole(selectedRoleId)).unwrap();
-        console.log('Role deleted successfully');
       } catch (error) {
         console.error('Failed to delete role:', error);
       }
@@ -96,7 +94,6 @@ const RolesPage: React.FC = () => {
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
       await dispatch(toggleRoleStatus({ id, isActive: !isActive })).unwrap();
-      console.log(`Role status toggled successfully`);
     } catch (error) {
       console.error('Failed to toggle role status:', error);
     }

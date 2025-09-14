@@ -250,7 +250,6 @@ const userSlice = createSlice({
       })
       .addCase(activateUser.fulfilled, (state) => {
         state.loading = false;
-        // Optionally update the user in the list if needed
         state.error = null;
       })
       .addCase(activateUser.rejected, (state, action) => {
@@ -266,7 +265,6 @@ const userSlice = createSlice({
       })
       .addCase(deactivateUser.fulfilled, (state) => {
         state.loading = false;
-        // Optionally update the user in the list if needed
         state.error = null;
       })
       .addCase(deactivateUser.rejected, (state, action) => {

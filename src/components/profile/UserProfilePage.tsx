@@ -38,6 +38,7 @@ import {
 } from '../../store/slices/userProfileSlice';
 import ProfileEditDialog from './ProfileEditDialog';
 import ChangePasswordDialog from './ChangePasswordDialog';
+import { TokenStatusCard } from '../auth/TokenStatusCard';
 
 const UserProfilePage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -92,6 +93,9 @@ const UserProfilePage: React.FC = () => {
       </Typography>
 
       <Stack spacing={3}>
+        {/* Token Status Section */}
+        <TokenStatusCard />
+        
         {/* Avatar and Basic Info Card */}
         <Card>
           <CardContent>

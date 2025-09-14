@@ -122,16 +122,16 @@ const UsersPage: React.FC = () => {
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      if (isActive) {
-      // Deactivate user
-      await dispatch(deactivateUser(id));
-    } else {
-      // Activate user
-      await dispatch(activateUser(id));
-    }
-      console.log(`Role status toggled successfully`);
+      if (!isActive) {
+        // Deactivate user
+        await dispatch(deactivateUser(id));
+      } else {
+        // Activate user
+        await dispatch(activateUser(id));
+      }
+      loadUsers();
     } catch (error) {
-      console.error('Failed to toggle role status:', error);
+      console.error("Failed to toggle role status:", error);
     }
   };
 
@@ -164,6 +164,13 @@ const UsersPage: React.FC = () => {
     });
   };
 
+  const formatRoleCount = (roles: string[] | undefined) => {
+    const count = roles?.length || 0;
+    if (count === 0) return 'No roles';
+    if (count === 1) return '1 role';
+    return `${count} roles`;
+  };
+
   const columns: GridColDef[] = [
     {
       field: "avatar",
@@ -183,7 +190,7 @@ const UsersPage: React.FC = () => {
     {
       field: "name",
       headerName: "Name",
-      width: 200,
+      width: 150,
       align: "center",
       headerAlign: "center",
       valueGetter: (_value, row) => `${row.firstName} ${row.lastName}`,
@@ -191,7 +198,7 @@ const UsersPage: React.FC = () => {
     {
       field: "email",
       headerName: "Email",
-      width: 250,
+      width: 200,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -243,44 +250,23 @@ const UsersPage: React.FC = () => {
       width: 150,
       align: "center",
       headerAlign: "center",
-      renderCell: (params) => (
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 0.5,
-            justifyContent: "center",
-          }}
-        >
-          {params.value?.map((roleName: string) => {
-            // Find role by name to get display name
-            let roleData: any = roles as any;
-            let roleDataValues = Array.isArray(roleData)
-              ? roleData
-              : roleData && roleData.data
-              ? roleData.data
-              : [];
-            const role = roleDataValues.find(
-              (r: { name: string }) => r.name === roleName
-            );
-            const displayName = role?.name || roleName;
-
-            return (
-              <Chip
-                key={roleName}
-                label={displayName}
-                size="small"
-                variant="outlined"
-              />
-            );
-          }) || "-"}
-        </Box>
-      ),
+      renderCell: (params) => {
+        const userCount = params.value?.length || 0;
+        return (
+          <Chip
+            label={formatRoleCount(params.value)}
+            size="small"
+            variant="outlined"
+            color={userCount > 0 ? "primary" : "default"}
+            onClick={() => handleEditUser(params.row)}
+          />
+        );
+      },
     },
     {
       field: "isActive",
       headerName: "Status",
-      width: 100,
+      width: 150,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -288,11 +274,13 @@ const UsersPage: React.FC = () => {
           control={
             <Switch
               checked={params.value}
-              onChange={(e) => handleToggleActive(params.row.id, e.target.checked)}
+              onChange={(e) =>
+                handleToggleActive(params.row.id, e.target.checked)
+              }
               size="small"
             />
           }
-          label={params.value ? 'Active' : 'Inactive'}
+          label={params.value ? "Active" : "Inactive"}
           labelPlacement="end"
         />
       ),
@@ -344,20 +332,6 @@ const UsersPage: React.FC = () => {
         </Typography>
 
         <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          <TextField
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ flexGrow: 1 }}
-          />
-
           <FormControl size="medium" sx={{ minWidth: 120 }}>
             <InputLabel>Status</InputLabel>
             <Select
@@ -399,6 +373,20 @@ const UsersPage: React.FC = () => {
             {error}
           </Alert>
         )}
+        <TextField
+          fullWidth
+          placeholder="Search users..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ flexGrow: 1 }}
+        />
       </Box>
 
       {/* Data Grid */}

@@ -4,13 +4,16 @@ import { CssBaseline } from '@mui/material';
 import store from './store';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { router } from './router';
+import { TokenRefreshProvider } from './components/auth/TokenRefreshProvider';
 
 function App() {
   return (
     <Provider store={store}>
       <ThemeProvider>
         <CssBaseline />
-        <RouterProvider router={router} />
+        <TokenRefreshProvider>
+          <RouterProvider router={router} />
+        </TokenRefreshProvider>
       </ThemeProvider>
     </Provider>
   );

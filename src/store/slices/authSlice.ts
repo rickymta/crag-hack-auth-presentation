@@ -23,7 +23,7 @@ const initialState: AuthState = {
   isAuthenticated: AuthService.isAuthenticated(),
   isLoading: false,
   error: null,
-  deviceId: '',
+  deviceId: AuthService.getDeviceId(),
 };
 
 // Async thunks
@@ -72,12 +72,12 @@ export const logoutAsync = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const state = getState() as { auth: AuthState };
-      const refreshToken = ''; // We'll get this from cookies via AuthService
+      const refreshToken = AuthService.getRefreshToken();
       
       if (refreshToken) {
         await AuthService.logout({
           refreshToken,
-          deviceId: state.auth.deviceId,
+          deviceId: state.auth.deviceId || AuthService.getDeviceId(),
         });
       }
       
@@ -135,6 +135,34 @@ export const changePasswordAsync = createAsyncThunk(
       }
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to change password');
+    }
+  }
+);
+
+export const refreshTokenAsync = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const state = getState() as { auth: AuthState };
+      const refreshToken = AuthService.getRefreshToken();
+      const deviceId = state.auth.deviceId || AuthService.getDeviceId();
+      
+      if (!refreshToken) {
+        return rejectWithValue('No refresh token available');
+      }
+
+      const response = await AuthService.refreshToken({
+        refreshToken,
+        deviceId,
+      });
+      
+      if (response.success) {
+        return response.data;
+      } else {
+        return rejectWithValue(response.message);
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to refresh token');
     }
   }
 );
@@ -267,8 +295,28 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       });
+
+    // Refresh Token
+    builder
+      .addCase(refreshTokenAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(refreshTokenAsync.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(refreshTokenAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
 export const { clearError, setDeviceId, resetAuth, setUser } = authSlice.actions;
+
 export default authSlice.reducer;

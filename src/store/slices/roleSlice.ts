@@ -71,7 +71,6 @@ export const fetchRoles = createAsyncThunk(
       // Try API first
       try {
         const response = await RoleService.getRoles();
-        console.log("fetchRoles - API response:", response);
         if (response.success && response.data && response.data.roles) {
           // Extract roles array from the nested data structure
           const roleListData = response.data as RoleListDto;

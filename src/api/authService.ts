@@ -36,8 +36,6 @@ export class AuthService {
    */
   static async login(data: LoginRequestDto): Promise<ApiResponse<AuthResponseDto>> {
     const response = await apiClient.post<AuthResponseDto>(API_ENDPOINTS.AUTH.LOGIN, data);
-    console.log(response)
-    
     // Store tokens and user data
     if (response.success && response.data) {
       apiClient.setTokens(response.data.accessToken, response.data.refreshToken);
@@ -137,6 +135,20 @@ export class AuthService {
    */
   static getCurrentUser(): UserDto | null {
     return apiClient.getUserData();
+  }
+
+  /**
+   * Get stored refresh token
+   */
+  static getRefreshToken(): string | null {
+    return apiClient.getRefreshToken();
+  }
+
+  /**
+   * Get stored device ID
+   */
+  static getDeviceId(): string {
+    return apiClient.getDeviceId();
   }
 
   /**

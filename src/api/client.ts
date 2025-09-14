@@ -146,25 +146,21 @@ export class ApiClient {
 
   // Token management methods
   public setTokens(accessToken: string, refreshToken: string): void {
-    console.log('Setting tokens in localStorage:', { accessToken, refreshToken });
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
   }
 
   public getAccessToken(): string | null {
     const token = localStorage.getItem('access_token');
-    console.log('Getting access token from localStorage:', token);
     return token;
   }
 
   public getRefreshToken(): string | null {
     const token = localStorage.getItem('refresh_token');
-    console.log('Getting refresh token from localStorage:', token);
     return token;
   }
 
   public clearTokens(): void {
-    console.log('Clearing tokens from localStorage');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');

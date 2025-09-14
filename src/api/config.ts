@@ -1,5 +1,7 @@
+import { getEnvVariable } from './env';
+
 export const API_CONFIG = {
-  BASE_URL: 'https://localhost:7270/api',
+  BASE_URL: getEnvVariable('API_BASE_URL', 'https://localhost:7270/api'),
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
