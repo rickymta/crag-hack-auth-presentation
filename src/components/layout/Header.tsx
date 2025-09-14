@@ -40,6 +40,15 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
   const currentUser = useAppSelector(selectAuthUser);
   const { profile } = useAppSelector((state) => state.userProfile);
   
+  // Debug avatar data
+  console.log('Header render:', {
+    currentUserId: currentUser?.id,
+    currentUserAvatar: currentUser?.avatar,
+    profileId: profile?.id,
+    profileAvatar: profile?.avatar,
+    finalAvatar: profile?.avatar || currentUser?.avatar
+  });
+  
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
 

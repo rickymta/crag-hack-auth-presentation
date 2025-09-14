@@ -78,13 +78,6 @@ export const LoginPage: React.FC = () => {
     const deviceId = apiClient.getDeviceId();
     
     try {
-      console.log('Login attempt with data:', { 
-        emailOrPhone: data.emailOrPhone, 
-        deviceId,
-        deviceName: 'Admin Dashboard Web',
-        rememberMe: data.rememberMe 
-      });
-      
       const result = await dispatch(loginAsync({
         emailOrPhone: data.emailOrPhone,
         password: data.password,
@@ -93,13 +86,8 @@ export const LoginPage: React.FC = () => {
         rememberMe: data.rememberMe,
       }));
 
-      console.log('Login result:', result);
-
       if (loginAsync.fulfilled.match(result)) {
-        console.log('Login successful, navigating to dashboard');
         navigate('/dashboard');
-      } else {
-        console.log('Login failed:', result.payload);
       }
     } catch (error) {
       console.error('Login error:', error);

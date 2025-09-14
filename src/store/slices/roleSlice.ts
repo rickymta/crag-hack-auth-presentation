@@ -99,12 +99,8 @@ export const createRole = createAsyncThunk(
   "roles/createRole",
   async (roleData: RoleCreateDto, { rejectWithValue }) => {
     try {
-      console.log("createRole called with data:", roleData);
-
       try {
         const response = await RoleService.createRole(roleData);
-        console.log("createRole response:", response);
-
         if (response.success) {
           return response.data;
         } else {

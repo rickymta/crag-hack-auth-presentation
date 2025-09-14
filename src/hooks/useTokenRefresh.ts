@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
-import { refreshTokenAsync, resetAuth } from '../store/slices/authSlice';
+import { refreshTokenAsync, resetAuth, logoutAsync } from '../store/slices/authSlice';
 import { AuthService } from '../api';
 
 interface UseTokenRefreshOptions {
@@ -61,9 +61,14 @@ export const useTokenRefresh = (options: UseTokenRefreshOptions = {}) => {
       await dispatch(refreshTokenAsync()).unwrap();
     } catch (error) {
       console.error('Token refresh failed:', error);
-      // If refresh fails, logout user
-      dispatch(resetAuth());
-      AuthService.clearAuth();
+      // If refresh fails, logout user properly to clear all state
+      try {
+        await dispatch(logoutAsync()).unwrap();
+      } catch (logoutError) {
+        // Fallback if logout fails
+        dispatch(resetAuth());
+        AuthService.clearAuth();
+      }
       // Optionally redirect to login
       window.location.href = '/auth/login';
     }
@@ -77,9 +82,14 @@ export const useTokenRefresh = (options: UseTokenRefreshOptions = {}) => {
 
     const refreshToken = AuthService.getRefreshToken();
     if (!refreshToken) {
-      // No refresh token available, logout user
-      dispatch(resetAuth());
-      AuthService.clearAuth();
+      // No refresh token available, logout user properly to clear all state
+      try {
+        await dispatch(logoutAsync()).unwrap();
+      } catch (logoutError) {
+        // Fallback if logout fails
+        dispatch(resetAuth());
+        AuthService.clearAuth();
+      }
       return;
     }
 

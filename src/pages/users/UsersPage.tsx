@@ -201,7 +201,10 @@ const UsersPage: React.FC = () => {
       width: 200,
       align: "center",
       headerAlign: "center",
-      renderCell: (params) => (
+      renderCell: (params) => {
+        const first3Characters = params.value.substring(0, 3);
+        const last3Characters = params.value.substring(params.value .length - 3);
+        return (
         <Box
           sx={{
             display: "flex",
@@ -210,14 +213,15 @@ const UsersPage: React.FC = () => {
             gap: 1,
           }}
         >
-          <Typography variant="body2">{params.value}</Typography>
+          <Typography variant="body2">{`${first3Characters}...${last3Characters}`}</Typography>
           {params.row.isEmailVerified ? (
-            <Chip label="V" color="success" size="small" />
+            <Chip label="Verified" color="success" size="small" />
           ) : (
-            <Chip label="X" color="warning" size="small" />
+            <Chip label="Unverified" color="warning" size="small" />
           )}
         </Box>
-      ),
+      );
+      },
     },
     {
       field: "phoneNumber",
@@ -225,7 +229,10 @@ const UsersPage: React.FC = () => {
       width: 150,
       align: "center",
       headerAlign: "center",
-      renderCell: (params) => (
+      renderCell: (params) => {
+        const first3Characters = params.value.substring(0, 3);
+        const last3Characters = params.value.substring(params.value .length - 3);
+        return (
         <Box
           sx={{
             display: "flex",
@@ -234,15 +241,16 @@ const UsersPage: React.FC = () => {
             gap: 1,
           }}
         >
-          <Typography variant="body2">{params.value || "-"}</Typography>
+          <Typography variant="body2">{`${first3Characters}...${last3Characters}`}</Typography>
           {params.value &&
             (params.row.isPhoneVerified ? (
-              <Chip label="V" color="success" size="small" />
+              <Chip label="Verified" color="success" size="small" />
             ) : (
-              <Chip label="X" color="warning" size="small" />
+              <Chip label="Unverified" color="warning" size="small" />
             ))}
         </Box>
-      ),
+      )
+      },
     },
     {
       field: "roles",

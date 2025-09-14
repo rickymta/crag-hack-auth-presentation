@@ -8,16 +8,32 @@ interface ProfileProviderProps {
 
 export const ProfileProvider: React.FC<ProfileProviderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const { profile } = useAppSelector((state) => state.userProfile);
 
   useEffect(() => {
-    // Only fetch profile if user is authenticated and profile is not already loaded
-    if (isAuthenticated && !profile) {
-      console.log('ProfileProvider: Fetching user profile...');
-      dispatch(fetchUserProfile());
+    console.log('ProfileProvider effect triggered:', { 
+      isAuthenticated, 
+      userId: user?.id, 
+      profileId: profile?.id,
+      hasProfile: !!profile 
+    });
+    
+    // Fetch profile when user is authenticated
+    if (isAuthenticated && user) {
+      // Always fetch profile when user changes or when no profile exists
+      if (!profile || profile.id !== user.id) {
+        console.log('ProfileProvider: Fetching user profile for user:', user.id);
+        dispatch(fetchUserProfile());
+      } else {
+        console.log('ProfileProvider: Profile already exists for current user');
+      }
+    } else if (!isAuthenticated) {
+      console.log('ProfileProvider: User not authenticated, should clear profile');
+    } else {
+      console.log('ProfileProvider: User authenticated but no user data');
     }
-  }, [dispatch, isAuthenticated, profile]);
+  }, [dispatch, isAuthenticated, user?.id, profile?.id]);
 
   return <>{children}</>;
 };

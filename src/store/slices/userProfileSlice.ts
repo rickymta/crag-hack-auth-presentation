@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { UserProfileService } from '../../api';
+import { logoutAsync } from './authSlice';
 import type { 
   UserProfileDto, 
   UserProfileUpdateDto, 
@@ -169,6 +170,22 @@ const userProfileSlice = createSlice({
       .addCase(changePassword.rejected, (state, action) => {
         state.changingPassword = false;
         state.error = action.payload as string;
+      })
+      
+      // Clear profile when user logs out
+      .addCase(logoutAsync.fulfilled, (state) => {
+        state.profile = null;
+        state.loading = false;
+        state.error = null;
+        state.uploadingAvatar = false;
+        state.changingPassword = false;
+      })
+      .addCase(logoutAsync.rejected, (state) => {
+        state.profile = null;
+        state.loading = false;
+        state.error = null;
+        state.uploadingAvatar = false;
+        state.changingPassword = false;
       });
   },
 });

@@ -31,21 +31,14 @@ export const loginAsync = createAsyncThunk(
   'auth/login',
   async (loginData: LoginRequestDto, { rejectWithValue }) => {
     try {
-      console.log('loginAsync thunk started with data:', loginData);
-      
       const response = await AuthService.login(loginData);
-      
-      console.log('loginAsync thunk received response:', response);
-      
       if (response.success) {
-        console.log('loginAsync thunk returning success data:', response.data);
         return response.data;
       } else {
-        console.log('loginAsync thunk returning error:', response.message);
         return rejectWithValue(response.message);
       }
     } catch (error: any) {
-      console.log('loginAsync thunk caught error:', error);
+      console.error('loginAsync thunk caught error:', error);
       return rejectWithValue(error.message || 'Login failed');
     }
   }
@@ -193,19 +186,16 @@ const authSlice = createSlice({
     // Login
     builder
       .addCase(loginAsync.pending, (state) => {
-        console.log('loginAsync.pending - setting loading to true');
         state.isLoading = true;
         state.error = null;
       })
       .addCase(loginAsync.fulfilled, (state, action) => {
-        console.log('loginAsync.fulfilled - updating state with user data:', action.payload);
         state.isLoading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
       })
       .addCase(loginAsync.rejected, (state, action) => {
-        console.log('loginAsync.rejected - setting error:', action.payload);
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
