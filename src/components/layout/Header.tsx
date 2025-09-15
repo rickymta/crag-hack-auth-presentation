@@ -28,6 +28,7 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import { toggleSidebar, toggleTheme, selectThemeMode, selectAuthUser } from '../../store';
 import { logoutAsync } from '../../store/slices/authSlice';
 import { SafeAvatar } from '../common/SafeAvatar';
+import { debugAvatar } from '../../utils/debugUtils';
 
 interface HeaderProps {
   sidebarOpen: boolean;
@@ -41,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({ sidebarOpen }) => {
   const { profile } = useAppSelector((state) => state.userProfile);
   
   // Debug avatar data
-  console.log('Header render:', {
+  debugAvatar('Header render', {
     currentUserId: currentUser?.id,
     currentUserAvatar: currentUser?.avatar,
     profileId: profile?.id,

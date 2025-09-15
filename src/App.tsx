@@ -6,7 +6,6 @@ import { ThemeProvider } from './theme/ThemeProvider';
 import { router } from './router';
 import { TokenRefreshProvider } from './components/auth/TokenRefreshProvider';
 import { ProfileProvider } from './components/profile/ProfileProvider';
-import { DebugPanel } from './components/debug/DebugPanel';
 
 function App() {
   return (
@@ -16,7 +15,6 @@ function App() {
         <TokenRefreshProvider>
           <ProfileProvider>
             <RouterProvider router={router} />
-            <DebugPanel />
           </ProfileProvider>
         </TokenRefreshProvider>
       </ThemeProvider>
